@@ -1,118 +1,76 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import {useEffect, useState} from 'react';
+import HomeScreen from '../agora/src/app/screens/homescreen';
+import {NavigationContainer} from '@react-navigation/native';
+import {LogBox, Platform, Text, View} from 'react-native';
+import {PERMISSIONS, requestMultiple} from 'react-native-permissions';
+LogBox.ignoreAllLogs();
 
-import React from 'react';
-import type {PropsWithChildren} from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
+const App = () => {
+  const [gotPermissions, setGotPermissions] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  // Initialize Agora SDK
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+  useEffect(() => {
+    requestMultiple(
+      Platform.OS === 'ios'
+        ? [PERMISSIONS.IOS.CAMERA, PERMISSIONS.IOS.MICROPHONE]
+        : [PERMISSIONS.ANDROID.CAMERA],
+    )
+      .then(val => {
+        console.log(Platform.OS, val);
+        setIsLoading(false);
 
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
+        for (const perm of Object.values(val)) {
+          if (perm !== 'granted') {
+            setGotPermissions(false);
+            break;
+          }
+        }
+      })
+      .catch(err => {
+        console.log(Platform.OS, err);
+        setIsLoading(false);
+        setGotPermissions(false);
+      });
+    return () => {};
+  }, []);
 
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
+  if (isLoading) {
+    return (
+      <View
+        style={{
+          height: '100%',
+          width: '100%',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: 'white',
+        }}>
+        <Text> Loading......</Text>
+      </View>
+    );
+  }
+  return gotPermissions ? (
+    <NavigationContainer>
+      <HomeScreen />
+    </NavigationContainer>
+  ) : (
+    <View
+      style={{
+        height: '100%',
+        width: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'white',
+        padding: 20,
+      }}>
+      <Text style={{color: 'black', fontSize: 20, textAlign: 'center'}}>
+        Insufficient Permissions
       </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
+      <Text style={{color: 'black', textAlign: 'center'}}>
+        Restart app after granting permissions from settings
       </Text>
     </View>
   );
-}
-
-function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-  };
-
-  return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
-
-const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
-});
+};
 
 export default App;
